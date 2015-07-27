@@ -27,6 +27,7 @@
     "babel": "^5.8.9"
   },
   "dependencies": {
+    "co": "^4.6.0",
     "concurrent-transform": "^1.0.0"
   }
 }
