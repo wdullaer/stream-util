@@ -1,0 +1,55 @@
+{
+    "parser": "babel-eslint",
+
+    "env": {
+        "node": true,
+        "browser": true,
+        "es6": true
+    },
+
+    "rules": {
+
+        // Possible errors
+        "no-cond-assign": 0, // regex matching is easier with statements in loop contitions
+        "no-comma-dangle": 0,
+        "no-console": 0,
+
+        // Best practices
+        "eqeqeq": 2,
+        "no-else-return": 2,
+        "no-floating-decimal": 2,
+        "wrap-iife": [2, "inside"],
+
+        // Strict Mode
+        "strict": [2, "never"],
+
+        // Variables
+        "no-use-before-define": 0,
+        "no-shadow": 0,
+
+        // Node.js
+        "no-mixed-requires": 0,
+        "no-path-concat": 0,
+
+        // best practises
+        curly: [2, "multi-line"],
+
+        // Stylistic issues
+        "new-cap": [2, { "capIsNewExceptions": ["Reapp"] }],
+        "semi": [2, "never"],
+        "no-multiple-empty-lines": [1, {max: 1}],
+        "no-lonely-if": 2,
+        "no-underscore-dangle": 0,
+        "space-after-keywords": 2,
+        "space-in-brackets": [2, "always", { "propertyName": false }],
+        "space-infix-ops": 2,
+        "quotes": [2, "single"],
+
+        // Legacy
+        "no-bitwise": 2,
+
+        // es6
+        "no-var": 2,
+        "generator-star": [2, "start"]
+    }
+}

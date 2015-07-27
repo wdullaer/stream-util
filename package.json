@@ -1,0 +1,30 @@
+{
+  "name": "stream-util",
+  "version": "1.0.0",
+  "description": "stream utility functions",
+  "main": "index.js",
+  "scripts": {
+    "build": "babel -d lib/ src/",
+    "lint": "eslint --ext .js src",
+
+    "prebuild": "npm run lint",
+    "prepublish": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/jogabo/stream-util.git"
+  },
+  "keywords": [
+    "stream",
+    "utils"
+  ],
+  "author": "PG Herveou",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jogabo/stream-util/issues"
+  },
+  "homepage": "https://github.com/jogabo/stream-util#readme",
+  "devDependencies": {
+    "babel": "^5.8.9"
+  }
+}
