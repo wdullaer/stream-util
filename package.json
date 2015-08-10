@@ -24,10 +24,10 @@
   },
   "homepage": "https://github.com/jogabo/stream-util#readme",
   "devDependencies": {
-    "babel": "^5.8.9"
+    "babel": "5.8.21"
   },
   "dependencies": {
-    "co": "^4.6.0",
-    "concurrent-transform": "^1.0.0"
+    "co": "4.6.0",
+    "concurrent-transform": "1.0.0"
   }
 }
