@@ -8,6 +8,25 @@ import { Readable, Transform } from 'stream'
 import co from 'co'
 
 /**
+ * LogStream
+ *
+ * transform stream that log data before passing it down the stream
+ */
+
+class LogStream extends Transform {
+
+  constructor(logfn = (x) => console.log(x)) {
+    super({ objectMode: true })
+    this.log = logfn
+  }
+
+  _transform(chunk, encoding, callback) {
+    this.log(chunk)
+    callback(null, chunk)
+  }
+}
+
+/**
  * ReadValuesStream
  *
  * Readable stream that transdorm an array into stream
@@ -173,6 +192,23 @@ class ThroughStream extends Transform {
   }
 }
 
+/**
+ * FilterStream
+ */
+
+class FilterStream extends Transform {
+
+  constructor(fn) {
+    super({ objectMode: true })
+    this.fn = fn
+  }
+
+  _transform(chunk, encoding, callback) {
+    if (this.fn(chunk)) this.push(chunk)
+    callback()
+  }
+}
+
 /*!
  * module export
  */
@@ -182,8 +218,14 @@ export default {
     if (!Array.isArray(arr)) arr = [].slice.call(arguments)
     return new ConcatStream(arr)
   },
+  log(fn) {
+    return new LogStream(fn)
+  },
   through(fn) {
     return new ThroughStream(fn)
+  },
+  filter(fn) {
+    return new FilterStream(fn)
   },
   throughAsync(fn) {
     return new ThroughAsyncStream(fn)
@@ -200,21 +242,20 @@ export default {
   mapAsync(fn) {
     return new MapAsyncStream(fn)
   },
-  parallelAsync(concurrent, fn) {
+  parallelMapAsync(concurrent, fn) {
     return parallel(new MapAsyncStream(fn), concurrent)
   },
   mapSync(fn) {
     return new MapSyncStream(fn)
   },
   consume(createStream) {
-    return new Promise(function(fulfill, reject) {
-      const d = domain.create()
-      const stream = d.bind(createStream)()
-      d.once('error', reject)
-      stream.once('end', fulfill)
-      stream.once('finish', fulfill)
-      stream.once('error', reject)
-      if (stream.readable) stream.resume()
-    })
+    const d = domain.create()
+    const stream = d.bind(createStream)()
+
+    // re-emit error from domain
+    d.on('error', (err) => stream.emit('error', err))
+
+    if (stream.readable) stream.resume()
+    return stream
   }
 }
