@@ -3,7 +3,6 @@
  */
 
 import domain from 'domain'
-import parallel from 'concurrent-transform'
 import { Readable, Transform } from 'stream'
 import co from 'co'
 
@@ -27,12 +26,12 @@ class LogStream extends Transform {
 }
 
 /**
- * ReadValuesStream
+ * FromArrayStream
  *
  * Readable stream that transdorm an array into stream
  */
 
-class ReadValuesStream extends Readable {
+class FromArrayStream extends Readable {
 
   constructor(values = []) {
     super({ objectMode: true })
@@ -42,33 +41,6 @@ class ReadValuesStream extends Readable {
   _read() {
     this.values.forEach((v) => this.push(v))
     this.push(null)
-  }
-}
-
-/**
- * PushValuesStream
- * transform stream that push additional values into stream
- */
-
-class PushValuesStream extends Transform {
-
-  constructor(values = []) {
-    super({ objectMode: true })
-    this.values = values
-  }
-
-  _transform(chunk, encoding, callback) {
-    this.push(chunk)
-    const index = this.values.indexOf(chunk)
-    if (index !== -1) this.values.splice(index, 1)
-    callback()
-  }
-
-  _flush(callback) {
-
-    // push remaining values
-    this.values.forEach((v) => this.push(v))
-    callback()
   }
 }
 
@@ -94,6 +66,22 @@ class ReadAsyncStream extends Readable {
 }
 
 /**
+ * MapSyncStream
+ */
+
+class MapSyncStream extends Transform {
+
+  constructor(fn) {
+    super({ objectMode: true })
+    this.fn = fn
+  }
+
+  _transform(chunk, encoding, callback) {
+    callback(null, this.fn(chunk))
+  }
+}
+
+/**
  * MapAsyncStream
  */
 
@@ -108,6 +96,23 @@ class MapAsyncStream extends Transform {
     this.fn(chunk)
     .then((val) => { callback(null, val) })
     .catch((err) => setImmediate(() => callback(err)))
+  }
+}
+
+/**
+ * ThroughSyncStream
+ */
+
+class ThroughSyncStream extends Transform {
+
+  constructor(fn) {
+    super({ objectMode: true })
+    this.fn = fn.bind(this)
+  }
+
+  _transform(chunk, encoding, callback) {
+    this.fn(chunk)
+    callback()
   }
 }
 
@@ -160,10 +165,10 @@ class ConcatStream extends Readable {
 }
 
 /**
- * MapSyncStream
+ * FilterSyncStream
  */
 
-class MapSyncStream extends Transform {
+class FilterSyncStream extends Transform {
 
   constructor(fn) {
     super({ objectMode: true })
@@ -171,36 +176,29 @@ class MapSyncStream extends Transform {
   }
 
   _transform(chunk, encoding, callback) {
-    callback(null, this.fn(chunk))
-  }
-}
-
-/**
- * ThroughStream
- */
-
-class ThroughStream extends Transform {
-
-  constructor(fn) {
-    super({ objectMode: true })
-    this.fn = fn.bind(this)
-  }
-
-  _transform(chunk, encoding, callback) {
-    this.fn(chunk)
+    if (this.fn(chunk)) this.push(chunk)
     callback()
   }
 }
 
 /**
- * FilterStream
+ * FilterAsyncStream
  */
 
-class FilterStream extends Transform {
+class FilterAsyncStream extends Transform {
 
   constructor(fn) {
     super({ objectMode: true })
-    this.fn = fn
+    this.fn = co.wrap(fn)
+  }
+
+  _transform(chunk, encoding, callback) {
+    this.fn(chunk)
+    .then((val) => {
+      if (val) this.push(chunk)
+      callback()
+    })
+    .catch((err) => setImmediate(() => callback(err)))
   }
 
   _transform(chunk, encoding, callback) {
@@ -221,32 +219,29 @@ export default {
   log(fn) {
     return new LogStream(fn)
   },
-  through(fn) {
-    return new ThroughStream(fn)
-  },
-  filter(fn) {
-    return new FilterStream(fn)
-  },
-  throughAsync(fn) {
-    return new ThroughAsyncStream(fn)
-  },
-  readValues(arr) {
-    return new ReadValuesStream(arr)
-  },
-  pushValues(arr) {
-    return new PushValuesStream(arr)
+  fromArray(arr) {
+    return new FromArrayStream(arr)
   },
   readAsync(fn) {
     return new ReadAsyncStream(fn)
   },
-  mapAsync(fn) {
-    return new MapAsyncStream(fn)
+  throughSync(fn) {
+    return new ThroughSyncStream(fn)
   },
-  parallelMapAsync(concurrent, fn) {
-    return parallel(new MapAsyncStream(fn), concurrent)
+  throughAsync(fn) {
+    return new ThroughAsyncStream(fn)
+  },
+  filterSync(fn) {
+    return new FilterSyncStream(fn)
+  },
+  filterAsync(fn) {
+    return new FilterAsyncStream(fn)
   },
   mapSync(fn) {
     return new MapSyncStream(fn)
+  },
+  mapAsync(fn) {
+    return new MapAsyncStream(fn)
   },
   consume(createStream) {
     const d = domain.create()
@@ -257,5 +252,14 @@ export default {
 
     if (stream.readable) stream.resume()
     return stream
+  },
+  toPromise(stream) {
+    return new Promise((fulfill, reject) => {
+      stream.once('error', reject)
+      stream.once('finish', fulfill)
+      stream.once('end', fulfill)
+      stream.on('end', fulfill)
+      if (stream.readable) stream.resume()
+    })
   }
 }
