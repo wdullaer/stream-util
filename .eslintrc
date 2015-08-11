@@ -1,9 +1,10 @@
 {
     "extends": "eslint:recommended",
+
     "parser": "babel-eslint",
+
     "env": {
         "node": true,
-        "browser": true,
         "es6": true
     },
 
@@ -25,6 +26,8 @@
 
         // Variables
         "no-use-before-define": 0,
+        "no-unused-vars": 2,
+        "no-undef": 2,
         "no-shadow": 0,
 
         // Node.js
@@ -41,7 +44,8 @@
         "no-lonely-if": 2,
         "no-underscore-dangle": 0,
         "space-after-keywords": 2,
-        "space-in-brackets": [2, "always", { "propertyName": false }],
+        "object-curly-spacing": [2, "always"],
+        "array-bracket-spacing": [2, "always"],
         "space-infix-ops": 2,
         "quotes": [2, "single"],
 
@@ -50,6 +54,6 @@
 
         // es6
         "no-var": 2,
-        "generator-star": [2, "start"]
+        "generator-star-spacing": [2, "after"]
     }
 }

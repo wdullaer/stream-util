@@ -24,7 +24,9 @@
   },
   "homepage": "https://github.com/jogabo/stream-util#readme",
   "devDependencies": {
-    "babel": "5.8.21"
+    "babel": "5.8.21",
+    "babel-eslint": "^4.0.5",
+    "eslint": "^1.1.0"
   },
   "dependencies": {
     "co": "4.6.0"
