@@ -248,7 +248,9 @@ export default {
     const stream = d.bind(createStream)()
 
     // re-emit error from domain
-    d.on('error', (err) => stream.emit('error', err))
+    d.on('error', (err) => {
+      setImmediate(() => stream.emit('error', err))
+    })
 
     if (stream.readable) stream.resume()
     return stream
@@ -258,7 +260,6 @@ export default {
       stream.once('error', reject)
       stream.once('finish', fulfill)
       stream.once('end', fulfill)
-      stream.on('end', fulfill)
       if (stream.readable) stream.resume()
     })
   }
