@@ -60,7 +60,10 @@ class ReadAsyncStream extends Readable {
     this.reading = true
 
     this.fn()
-    .then((val) => { this.push(val); this.push(null) })
+    .then((val) => {
+      if (val) this.push(val)
+      this.push(null)
+    })
     .catch((err) => setImmediate(() => this.emit('error', err)))
   }
 }
@@ -258,7 +261,6 @@ export default {
   toPromise(stream) {
     return new Promise((fulfill, reject) => {
       stream.once('error', reject)
-      stream.once('finish', fulfill)
       stream.once('end', fulfill)
       if (stream.readable) stream.resume()
     })
