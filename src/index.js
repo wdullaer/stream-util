@@ -6,6 +6,16 @@ import domain from 'domain'
 import { Readable, Transform } from 'stream'
 import co from 'co'
 
+function defer() {
+  let resolve, reject
+  const promise = new Promise(function(_resolve, _reject) {
+    resolve = _resolve
+    reject = _reject
+  })
+
+  return { promise, resolve, reject }
+}
+
 /**
  * LogStream
  *
@@ -41,6 +51,38 @@ class FromArrayStream extends Readable {
   _read() {
     this.values.forEach((v) => this.push(v))
     this.push(null)
+  }
+}
+
+/**
+ * ToArrayStream
+ *
+ * Write stream that transdorm an array into stream
+ */
+
+class ToArrayStream extends Transform {
+
+  constructor() {
+    super({ objectMode: true })
+    this._buffer = []
+    this._deferred = defer()
+  }
+
+  _transform(chunk, encoding, next) {
+    this._buffer.push(chunk)
+    next()
+  }
+
+  _flush() {
+    this._deferred.resolve(this._buffer)
+  }
+
+  promise() {
+    return this._deferred.promise
+  }
+
+  then(p) {
+    return this._deferred.promise.then(p)
   }
 }
 
@@ -224,6 +266,9 @@ export default {
   },
   fromArray(arr) {
     return new FromArrayStream(arr)
+  },
+  toArray() {
+    return new ToArrayStream()
   },
   readAsync(fn) {
     return new ReadAsyncStream(fn)
