@@ -57,7 +57,7 @@ class FromArrayStream extends Readable {
 /**
  * ToArrayStream
  *
- * Write stream that transdorm an array into stream
+ * Transform stream that buffered event into an array
  */
 
 class ToArrayStream extends Transform {
@@ -70,6 +70,38 @@ class ToArrayStream extends Transform {
 
   _transform(chunk, encoding, next) {
     this._buffer.push(chunk)
+    next()
+  }
+
+  _flush() {
+    this._deferred.resolve(this._buffer)
+  }
+
+  promise() {
+    return this._deferred.promise
+  }
+
+  then(p) {
+    return this._deferred.promise.then(p)
+  }
+}
+
+/**
+ * ToObjectStream
+ *
+ * Transform stream that buffered event into an object
+ */
+
+class ToObjectStream extends Transform {
+
+  constructor() {
+    super({ objectMode: true })
+    this._buffer = {}
+    this._deferred = defer()
+  }
+
+  _transform(chunk, encoding, next) {
+    Object.assign(this._buffer, chunk)
     next()
   }
 
@@ -269,6 +301,9 @@ export default {
   },
   toArray() {
     return new ToArrayStream()
+  },
+  toObject() {
+    return new ToObjectStream()
   },
   readAsync(fn) {
     return new ReadAsyncStream(fn)
