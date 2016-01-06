@@ -262,6 +262,7 @@ export default {
     return new Promise((fulfill, reject) => {
       stream.once('error', reject)
       stream.once('end', fulfill)
+      stream.once('finish', fulfill)
       if (stream.readable) stream.resume()
     })
   }
