@@ -85,11 +85,11 @@ describe('stream-util specs', function () {
   })
 
   it('should read async', () => {
-    return readAsync(async function (stream) {
+    return readAsync(async function (push) {
       await wait(1)
-      stream.push(1)
+      push(1)
       await wait(1)
-      stream.push(2)
+      push(2)
     })
     .pipe(toArray())
     .then(arr =>
@@ -98,9 +98,9 @@ describe('stream-util specs', function () {
   })
 
   it('should read sync', () => {
-    return readSync(function (stream) {
-      stream.push(1)
-      stream.push(2)
+    return readSync(function (push) {
+      push(1)
+      push(2)
     })
     .pipe(toArray())
     .then(arr =>
@@ -137,11 +137,11 @@ describe('stream-util specs', function () {
 
   it('should through async', () => {
     return fromArray([1, 2])
-      .pipe(throughAsync(async function (chunk, stream) {
+      .pipe(throughAsync(async function (chunk, push) {
         await wait(1)
-        stream.push(chunk)
+        push(chunk)
         await wait(1)
-        stream.push(chunk * 2)
+        push(chunk * 2)
       }))
       .pipe(toArray())
       .then(arr =>
@@ -151,9 +151,9 @@ describe('stream-util specs', function () {
 
   it('should through sync', () => {
     return fromArray([1, 2])
-      .pipe(throughSync(function (chunk, stream) {
-        stream.push(chunk)
-        stream.push(chunk * 2)
+      .pipe(throughSync(function (chunk, push) {
+        push(chunk)
+        push(chunk * 2)
       }))
       .pipe(toArray())
       .then(arr =>
