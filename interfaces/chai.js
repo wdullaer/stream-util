@@ -7,7 +7,7 @@ declare module 'chai' {
     itself: ChaiAssertion
   }
 
-  declare type ChaiAssertion = LanguageChain | {
+  declare type ChaiAssertion = LanguageChain & {
     ok: void,
     false: void,
     true: void,

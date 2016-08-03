@@ -1,6 +1,7 @@
+/* @flow */
 /* global it, describe */
 
-import chai from 'chai'
+import {expect} from 'chai'
 import {
   fromArray,
   toArray,
@@ -14,24 +15,25 @@ import {
   throughAsync,
   throughSync,
   filterAsync,
-  filterSync
+  filterSync,
+  toPromise,
+  consume
 } from '../lib'
 
 /*!
  * globals
  */
 
-const expect = chai.expect
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+function wait (ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
 
 /*!
  * test suite
  */
 
 describe('stream-util specs', function () {
-  // 'consume'
-
-  it('should create stream from array', (done: (err: ?Error) => void) => {
+  it('should create stream from array', (done) => {
     const src = ['foo', 'bar']
     const buffer: Array<string> = []
     const stream = fromArray(['foo', 'bar'])
@@ -46,26 +48,34 @@ describe('stream-util specs', function () {
   it('should create array from stream', () => {
     const src = ['foo', 'bar']
     const stream = fromArray(src)
-    return stream.resume().pipe(toArray())
-      .then(arr => expect(arr).to.deep.eq(src))
+    const transform = toArray()
+    const promise = transform.then((arr: Array<string>) =>
+        expect(arr).to.deep.equal(src)
+      )
+
+    stream.resume().pipe(transform)
+    return promise
   })
 
   it('should create object from stream', () => {
     const src = [ { foo: 1 }, { bar: 1 } ]
     const stream = fromArray(src)
-    return stream.resume().pipe(toObject())
-      .then(arr => expect(arr).to.deep.eq({
-        ...src[0],
-        ...src[1]
-      }))
+    const transform = toObject()
+    const promise = transform.then(o => expect(o).to.deep.equal({
+      ...src[0],
+      ...src[1]
+    }))
+
+    stream.resume().pipe(transform)
+    return promise
   })
 
-  it('should log content', (done: () => void) => {
+  it('should log content', (done) => {
     const src = ['foo', 'bar']
     let out = ''
     const stream = fromArray(src)
-    return stream
-      .pipe(log((v) => { out += v }))
+    stream
+      .pipe(log((v: string) => { out += v }))
       .resume()
       .on('end', () => {
         expect(out).to.equal(src.join(''))
@@ -78,113 +88,159 @@ describe('stream-util specs', function () {
     const src2 = [ 4, 5, 6 ]
     const s1 = fromArray(src1)
     const s2 = fromArray(src2)
-    return concat([ s1, s2 ]).pipe(toArray())
-      .then((arr) =>
-        expect(arr.sort()).to.deep.equal([ ...src1, ...src2 ].sort())
-      )
+    const transform = toArray()
+    const promise = transform.then((arr) =>
+      expect(arr.sort()).to.deep.equal([ ...src1, ...src2 ].sort())
+    )
+
+    concat([ s1, s2 ]).pipe(transform)
+    return promise
   })
 
   it('should read async', () => {
-    return readAsync(async function (push) {
+    const transform = toArray()
+    const promise = transform.then(arr =>
+      expect(arr).to.deep.equal([1, 2])
+    )
+
+    readAsync(async function (push) {
       await wait(1)
       push(1)
       await wait(1)
       push(2)
     })
-    .pipe(toArray())
-    .then(arr =>
-      expect(arr).to.deep.equal([1, 2])
-    )
+    .pipe(transform)
+
+    return promise
   })
 
   it('should read sync', () => {
-    return readSync(function (push) {
-      push(1)
-      push(2)
-    })
-    .pipe(toArray())
-    .then(arr =>
+    const transform = toArray()
+    const promise = transform.then(arr =>
       expect(arr).to.deep.equal([1, 2])
     )
+
+    readSync((push: (chunk: any) => void) => {
+      push(1)
+      push(2)
+    }).pipe(transform)
+    return promise
   })
 
   it('should map async', () => {
-    const src = [1, 2]
-    const mapping = (it) => `${it}:foo`
+    const src = ['1', '2']
+    const mapping = (it: string) => `${it}:foo`
+    const transform = toArray()
+    const promise = transform.then(arr =>
+      expect(arr).to.deep.equal(src.map(mapping))
+    )
 
-    return fromArray([1, 2])
-      .pipe(mapAsync(async function (chunk) {
+    fromArray(src)
+      .pipe(mapAsync(async function (chunk: string) {
         await wait(1)
         return mapping(chunk)
       }))
-      .pipe(toArray())
-      .then(arr =>
-        expect(arr).to.deep.equal(src.map(mapping))
-      )
+      .pipe(transform)
+
+    return promise
   })
 
   it('should map sync', () => {
-    const src = [1, 2]
+    const src = ['1', '2']
     const mapping = (it) => `${it}:foo`
+    const transform = toArray()
+    const promise = transform.then(arr =>
+      expect(arr).to.deep.equal(src.map(mapping))
+    )
 
-    return fromArray([1, 2])
+    fromArray(src)
       .pipe(mapSync(mapping))
-      .pipe(toArray())
-      .then(arr =>
-        expect(arr).to.deep.equal(src.map(mapping))
-      )
+      .pipe(transform)
+
+    return promise
   })
 
   it('should through async', () => {
-    return fromArray([1, 2])
-      .pipe(throughAsync(async function (chunk, push) {
+    const transform = toArray()
+    const promise = transform.then(arr =>
+      expect(arr).to.deep.equal([1, 2, 2, 4])
+    )
+
+    fromArray([1, 2])
+      .pipe(throughAsync(async function (chunk: number, push) {
         await wait(1)
         push(chunk)
         await wait(1)
         push(chunk * 2)
       }))
-      .pipe(toArray())
-      .then(arr =>
-        expect(arr).to.deep.equal([1, 2, 2, 4])
-      )
+      .pipe(transform)
+
+    return promise
   })
 
   it('should through sync', () => {
-    return fromArray([1, 2])
-      .pipe(throughSync(function (chunk, push) {
+    const transform = toArray()
+    const promise = transform.then(arr =>
+      expect(arr).to.deep.equal([1, 2, 2, 4])
+    )
+
+    fromArray([1, 2])
+      .pipe(throughSync(function (chunk: number, push) {
         push(chunk)
         push(chunk * 2)
       }))
-      .pipe(toArray())
-      .then(arr =>
-        expect(arr).to.deep.equal([1, 2, 2, 4])
-      )
+      .pipe(transform)
+    return promise
   })
 
   it('should filter aSync', () => {
     const src = [1, 2, 3]
-    const filterFn = v => v % 2
+    const filterFn = v => (v % 2) !== 0
+    const transform = toArray()
+    const promise = transform.then(arr =>
+      expect(arr).to.deep.equal(src.filter(filterFn))
+    )
 
-    return fromArray(src)
-      .pipe(filterAsync(async function (chunk) {
+    fromArray(src)
+      .pipe(filterAsync(async function (chunk: number) {
         await wait(1)
         return filterFn(chunk)
       }))
-      .pipe(toArray())
-      .then(arr =>
-        expect(arr).to.deep.equal(src.filter(filterFn))
-      )
+      .pipe(transform)
+
+    return promise
   })
 
   it('should filter sync', () => {
     const src = [1, 2, 3]
-    const filterFn = (v) => v % 2
+    const filterFn = (v) => v % 2 === 0
+    const transform = toArray()
+    const promise = transform.then(arr =>
+      expect(arr).to.deep.equal(src.filter(filterFn))
+    )
 
-    return fromArray(src)
+    fromArray(src)
       .pipe(filterSync(filterFn))
-      .pipe(toArray())
-      .then(arr =>
-        expect(arr).to.deep.equal(src.filter(filterFn))
-      )
+      .pipe(transform)
+
+    return promise
+  })
+
+  it('should promisify a stream', () => {
+    return toPromise(fromArray([1]))
+  })
+
+  it('should promisify a stream with error', () => {
+    return toPromise(fromArray([1])
+      .pipe(throughSync(function (chunk: number, onNext, onError) {
+        onError(new Error('booum'))
+      }))
+    ).catch((err: Error) => {
+      expect(err.message).to.equal('booum')
+    })
+  })
+
+  it('should consume stream', (done) => {
+    consume(() => fromArray([1, 2])).on('end', () => done())
   })
 })
