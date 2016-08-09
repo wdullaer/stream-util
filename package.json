@@ -45,6 +45,7 @@
     "mocha": "3.0.0"
   },
   "dependencies": {
+    "babel-runtime": "^6.9.2",
     "eslint-plugin-promise": "^2.0.0"
   }
 }
