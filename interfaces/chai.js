@@ -4,7 +4,8 @@ declare module 'chai' {
     deep: ChaiAssertion,
     be: ChaiAssertion,
     an: ChaiAssertion,
-    itself: ChaiAssertion
+    itself: ChaiAssertion,
+    have: ChaiAssertion
   }
 
   declare type ChaiAssertion = LanguageChain & {
@@ -13,7 +14,8 @@ declare module 'chai' {
     true: void,
     equal: (value: mixed, message?: string) => void,
     respondTo: (method: string, message?: string) => void,
-    instanceOf: (type: any, message?: string) => void
+    instanceOf: (type: any, message?: string) => void,
+    property: (property: string, value: any) => void
   }
 
   declare var exports: {

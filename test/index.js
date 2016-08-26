@@ -127,6 +127,22 @@ describe('stream-util specs', function () {
     return promise
   })
 
+  it('should emit a thrown error when reading sync', (done) => {
+    const readFunc = () => {
+      throw new Error('foo')
+    }
+    const errorHandler = (error) => {
+      expect(error).to.have.property('message', 'foo')
+      done()
+    }
+    const endHandler = () => done(new Error('should not call end'))
+
+    const stream = readSync(readFunc)
+    stream.on('error', errorHandler).on('end', endHandler)
+
+    stream.resume()
+  })
+
   it('should map async', () => {
     const src = ['1', '2']
     const mapping = (it: string) => `${it}:foo`
@@ -158,6 +174,23 @@ describe('stream-util specs', function () {
       .pipe(transform)
 
     return promise
+  })
+
+  it('should emit the thrown error when mapping sync', (done) => {
+    const src = ['1', '2']
+    const mapping = () => {
+      throw new Error('foo')
+    }
+    const errorHandler = (error) => {
+      expect(error).to.have.property('message', 'foo')
+      done()
+    }
+    const endHandler = () => done(new Error('Should not call end'))
+
+    fromArray(src)
+      .pipe(mapSync(mapping))
+      .on('error', errorHandler)
+      .on('end', endHandler)
   })
 
   it('should through async', () => {
@@ -224,6 +257,23 @@ describe('stream-util specs', function () {
       .pipe(transform)
 
     return promise
+  })
+
+  it('should emit the thrown error when running filter sync', (done) => {
+    const src = [1, 2, 3]
+    const filterFn = () => {
+      throw new Error('foo')
+    }
+    const errorHandler = (error) => {
+      expect(error).to.have.property('message', 'foo')
+      done()
+    }
+    const endHandler = () => done(new Error('should not call end'))
+
+    fromArray(src)
+      .pipe(filterSync(filterFn))
+      .on('error', errorHandler)
+      .on('end', endHandler)
   })
 
   it('should promisify a stream', () => {
